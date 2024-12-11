@@ -374,6 +374,31 @@ partial
 export
 channelGetWithTimeout : HasIO io => (chan : Channel a) -> (milliseconds : Nat) -> io (Maybe a)
 channelGetWithTimeout chan milliseconds = primIO (prim__channelGetWithTimeout chan milliseconds)
+=======
+channelGetNonBlocking : HasIO io => Scheme a => (chan : Channel a) -> io (Maybe a)
+channelGetNonBlocking chan =
+  pure $ (fromScheme . decodeObj) !(primIO (prim__channelGetNonBlocking chan))
+  where
+    decodeObj : ChannelObj -> ChannelSchemeObj 
+    decodeObj obj =
+      if prim_isInteger obj == 1 then IntegerVal (unsafeGetInteger obj)
+      else if prim_isVector obj == 1 then Vector (unsafeGetInteger (unsafeVectorRef obj 0))
+                                                 (readVector (unsafeVectorLength obj) 1 obj)
+      else if prim_isPair obj == 1 then Cons (decodeObj (unsafeFst obj))
+                                             (decodeObj (unsafeSnd obj))
+      else if prim_isFloat obj == 1 then FloatVal (unsafeGetFloat obj)
+      else if prim_isString obj == 1 then StringVal (unsafeGetString obj)
+      else if prim_isChar obj == 1 then CharVal (unsafeGetChar obj)
+      else if prim_isSymbol obj == 1 then Symbol (unsafeReadSymbol obj)
+      else if prim_isProcedure obj == 1 then Procedure obj
+      else if prim_isBox obj == 1 then Box (decodeObj (unsafeUnbox obj))
+      else Null
+      where
+        readVector : Integer -> Integer -> ChannelObj -> List ChannelSchemeObj
+        readVector len i obj
+          = if len == i
+              then []
+              else decodeObj (unsafeVectorRef obj i) :: readVector len (i + 1) obj
 
 ||| Puts a value on the given channel.
 |||
