@@ -492,6 +492,9 @@
                   (condition-signal read-cv)
                   (box the-val))))
           loop)))) ; Failed to acquire mutex
+            the-val)
+      ))
+  '()))
 
 ;; Mutex
 
