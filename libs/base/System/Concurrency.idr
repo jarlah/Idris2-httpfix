@@ -333,8 +333,10 @@ prim_isBox : ChannelObj -> Int
 prim__makeChannel : PrimIO (Channel a)
 %foreign "scheme:blodwen-channel-get"
 prim__channelGet : Channel a -> PrimIO a
-%foreign "scheme:blodwen-channel-get-non-blocking"
-prim__channelGetNonBlocking : Channel a -> PrimIO ChannelObj
+%foreign "scheme,chez:blodwen-channel-get-non-blocking"
+prim__channelGetNonBlocking : Channel a -> PrimIO (Maybe a)
+%foreign "scheme,chez:blodwen-channel-get-with-timeout"
+prim__channelGetWithTimeout : Channel a -> Nat -> PrimIO (Maybe a)
 %foreign "scheme:blodwen-channel-put"
 prim__channelPut : Channel a -> a -> PrimIO ()
 
@@ -356,11 +358,23 @@ export
 channelGet : HasIO io => (chan : Channel a) -> io a
 channelGet chan = primIO (prim__channelGet chan)
 
-||| Non-blocking version of channelGet.
+||| Non-blocking version of channelGet (chez backend).
 |||
 ||| @ chan the channel to receive on
 partial
 export
+channelGetNonBlocking : HasIO io => (chan : Channel a) -> io (Maybe a)
+channelGetNonBlocking chan = primIO (prim__channelGetNonBlocking chan)
+
+||| Timeout version of channelGet (chez backend).
+|||
+||| @ chan the channel to receive on
+||| @ milliseconds how many milliseconds to wait until timeout
+partial
+export
+channelGetWithTimeout : HasIO io => (chan : Channel a) -> (milliseconds : Nat) -> io (Maybe a)
+channelGetWithTimeout chan milliseconds = primIO (prim__channelGetWithTimeout chan milliseconds)
+=======
 channelGetNonBlocking : HasIO io => Scheme a => (chan : Channel a) -> io (Maybe a)
 channelGetNonBlocking chan =
   pure $ (fromScheme . decodeObj) !(primIO (prim__channelGetNonBlocking chan))
